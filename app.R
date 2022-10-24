@@ -40,7 +40,8 @@ ui <- fluidPage(
 server <- function(input, output) {
   
   census_tract_shp <- reactive({
-    tracts_out <- tracts(as.character(input$state_choice[1]),county=NULL,2010,cb=T) ## grab tract shapefiles
+    
+    tracts_out <- tracts(as.character(input$state_choice),county=NULL,2010,cb=T) ## grab tract shapefiles
     tracts_out$GEOID <- as.numeric(gsub("1400000US","",tracts_out$GEO_ID)) # beautifying tract data
     
     return(tracts_out)
