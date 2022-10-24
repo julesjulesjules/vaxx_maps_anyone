@@ -2,6 +2,9 @@ library(shiny)
 library(tidyverse)
 library(lubridate)
 
+census_api_key <- read.table("census_api_key_hold.txt")[1, 1]
+
+
 ui <- fluidPage(
   
   # Application title
@@ -16,7 +19,9 @@ ui <- fluidPage(
     ),
     
     # Show a plot
-    mainPanel()
+    mainPanel(
+      leafletOutput(outputId = "state_map")
+    )
 )
 )
 
