@@ -46,11 +46,21 @@ server <- function(input, output) {
     return(tracts_out)
   })
   
+  county_shp <- reactive({
+    county_out <- counties(as.character(input$state_choice[1]),2010,cb=T, resolution = "500k") ## grab county shapefiles
+    county_out$GEOID <- as.numeric(gsub("0500000US","",county_out$GEO_ID)) # beautifying tract data
+    
+    return(county_out)
+  })
+  
   output$state_map_out <- renderLeaflet({
     
     ct_shp <- census_tract_shp()
-
     ct_shp$shape <- st_transform(ct_shp$geometry,"+proj=longlat +datum=WGS84") # sf package-geometries into something usable by leaflet
+    
+    co_shp <- county_shp()
+    co_shp$shape <- st_transform(co_shp$geometry,"+proj=longlat +datum=WGS84") # sf package-geometries into something usable by leaflet
+    
     
     map.leaf <- leaflet() %>% addPolygons(data = ct_shp$shape, fillColor = "#586F6B",
                                                 color = "#D7D9CE", # you need to use hex colors
@@ -58,6 +68,14 @@ server <- function(input, output) {
                                                 weight = 1, 
                                                 smoothFactor = 0.2) %>%
                               setMapWidgetStyle(list(background= "#292929"))
+    
+    if(input$county_overlay == "Yes"){
+      map.leaf <- map.leaf %>% addPolygons(data = co_shp$shape, fillColor = "#B287A3",
+                               color = "#000000", # you need to use hex colors
+                               fillOpacity = 0.3, 
+                               weight = 2, 
+                               smoothFactor = 0.2)
+    }
     
     return(map.leaf)
     
