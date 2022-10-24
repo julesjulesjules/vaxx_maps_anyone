@@ -236,8 +236,6 @@ server <- function(input, output) {
   
   output$state_map_out <- renderLeaflet({
     
-    print(head(population_choice(), 25))
-    
     ct_shp <- census_tract_shp()
     ct_shp_map <- merge(vaxx_d, ct_shp, by = "GEOID", all.x = TRUE, all.y = TRUE)
     
