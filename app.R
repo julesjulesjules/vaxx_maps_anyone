@@ -19,6 +19,8 @@ vaxx_d <- read.csv("./data/vaxx_data_in.csv")
 
 state_num <- read.table("./data/state_number_crosstab.tsv", sep = "\t", header = FALSE, colClasses = c("character", "character"), row.names = NULL, col.names = c("state", "code"))
 
+variable_match <- read.csv("./data/matching_vars.csv", stringsAsFactors = FALSE)
+
 ui <- fluidPage(
   
   # Application title
@@ -34,7 +36,7 @@ ui <- fluidPage(
       radioButtons("shp_year_choice", h6(strong("Boundary Year:")), 
                    choices = c("2010", "2020"), selected = "2010"), 
       selectInput("population_inc", h6(strong("Population Inclusion?")), 
-                  choices = c("None", ">5 years 2019 ACS", ">18 years 2019 ACS", 
+                  choices = c("None", "<5 years 2019 ACS", "<18 years 2019 ACS", 
                               "18+ years 2019 ACS", "All 2019 ACS"), selected = "None")
     
     ),
@@ -73,17 +75,149 @@ server <- function(input, output) {
   
   population_choice <- reactive({
     
-    state_code <- filter(state_num, state == as.character(input$state_choice[1]))[1, 2]
+    state_populations_have <- list.files("./data/2019_acs_populations/")
     
-    acs_total <- getCensus(
-      name = "acs/acs5", 
-      vintage = 2019, 
-      vars = c("NAME", "group(B01003)"), 
-      region = "tract:*", 
-      regionin = paste0("state:", state_code), 
-      key = census_api_key_read)
+    if (paste0(as.character(input$state_choice[1]), "_2019acs.csv") %in% state_populations_have){
+      complete_set_format <- read.csv(paste0("./data/2019_acs_populations/", as.character(input$state_choice[1]), "_2019acs.csv"))
+    } else {
+    
+      state_code <- filter(state_num, state == as.character(input$state_choice[1]))[1, 2]
+      
+      acs_total <- getCensus(
+        name = "acs/acs5", 
+        vintage = 2019, 
+        vars = c("NAME", "group(B01003)"), 
+        region = "tract:*", 
+        regionin = paste0("state:", state_code), 
+        key = census_api_key_read)
+      
+      acs_white <- getCensus(
+        name = "acs/acs5", 
+        vintage = 2019, 
+        vars = c("NAME", "group(B01001A)"), 
+        region = "tract:*", 
+        regionin = paste0("state:", state_code), 
+        key = census_api_key_read)
+      
+      acs_white <- melt(acs_white, id.vars = c("state", "county", "tract", "NAME", "GEO_ID"))
+      
+      acs_black <- getCensus(
+        name = "acs/acs5", 
+        vintage = 2019, 
+        vars = c("NAME", "group(B01001B)"), 
+        region = "tract:*", 
+        regionin = paste0("state:", state_code), 
+        key = census_api_key_read)
+      
+      acs_black <- melt(acs_black, id.vars = c("state", "county", "tract", "NAME", "GEO_ID"))
+      
+      acs_aian <- getCensus(
+        name = "acs/acs5", 
+        vintage = 2019, 
+        vars = c("NAME", "group(B01001C)"), 
+        region = "tract:*", 
+        regionin = paste0("state:", state_code), 
+        key = census_api_key_read)
+      
+      acs_aian <- melt(acs_aian, id.vars = c("state", "county", "tract", "NAME", "GEO_ID"))
+      
+      acs_asian <- getCensus(
+        name = "acs/acs5", 
+        vintage = 2019, 
+        vars = c("NAME", "group(B01001D)"), 
+        region = "tract:*", 
+        regionin = paste0("state:", state_code), 
+        key = census_api_key_read)
+      
+      acs_asian <- melt(acs_asian, id.vars = c("state", "county", "tract", "NAME", "GEO_ID"))
+      
+      acs_nhpi <- getCensus(
+        name = "acs/acs5", 
+        vintage = 2019, 
+        vars = c("NAME", "group(B01001E)"), 
+        region = "tract:*", 
+        regionin = paste0("state:", state_code), 
+        key = census_api_key_read)
+      
+      acs_nhpi <- melt(acs_nhpi, id.vars = c("state", "county", "tract", "NAME", "GEO_ID"))
+      
+      acs_other <- getCensus(
+        name = "acs/acs5", 
+        vintage = 2019, 
+        vars = c("NAME", "group(B01001F)"), 
+        region = "tract:*", 
+        regionin = paste0("state:", state_code), 
+        key = census_api_key_read)
+      
+      acs_other <- melt(acs_other, id.vars = c("state", "county", "tract", "NAME", "GEO_ID"))
+      
+      acs_two <- getCensus(
+        name = "acs/acs5", 
+        vintage = 2019, 
+        vars = c("NAME", "group(B01001G)"), 
+        region = "tract:*", 
+        regionin = paste0("state:", state_code), 
+        key = census_api_key_read)
+      
+      acs_two <- melt(acs_two, id.vars = c("state", "county", "tract", "NAME", "GEO_ID"))
+      
+      complete_set <- rbind(acs_white, acs_black, acs_aian, acs_asian, acs_nhpi, acs_other, acs_two)
+      
+      complete_set <- filter(complete_set, !grepl("MA", variable))
+      complete_set <- filter(complete_set, !grepl("EA", variable))
+      complete_set <- filter(complete_set, !grepl("M", variable))
+      
+      complete_set$variable <- substr(complete_set$variable, 1, 11)
+      
+      complete_set <- merge(complete_set, variable_match, by.x = c("variable"), by.y = c("MatchCode"))
+      
+      complete_set$tract_pull <- sapply(strsplit(complete_set$NAME,","), `[`, 1)
+      complete_set$county_pull <- sapply(strsplit(complete_set$NAME,","), `[`, 2)
+      complete_set$county <- trimws(gsub("County", "", complete_set$county_pull))
+      
+      complete_set$GEO_ID <- substr(complete_set$GEO_ID, 10, 21)
+      #filter(complete_set, tract == 970400) %>% select(tract, tract_pull, county) %>% distinct()
+      
+      complete_set2 <- select(complete_set, GEO_ID, tract, county, Description, Sex, Race, value)
+      
+      complete_set2 <- filter(complete_set2, Description != "Female:" & Description != "Male:" & Description != "Total:")
+      complete_set2$value <- as.numeric(complete_set2$value)
+      
+      complete_set_grouped <- complete_set2 %>% group_by(GEO_ID, county, tract, Description, Sex, Race) %>% summarize(Total = sum(value, na.rm = TRUE))
+      
+      complete_set_format <- dcast(complete_set_grouped, GEO_ID + county + tract + Description ~ Sex + Race, value.var = c("Total"))
+      
+      complete_set_format$sum_row <- rowSums(complete_set_format[,5:18] )
+      
+      complete_set_format <- complete_set_format %>% select(GEO_ID, county, tract, Description, sum_row)
+    
+      write.csv(complete_set_format, paste0("./data/2019_acs_populations/", as.character(input$state_choice[1]), "_2019acs.csv"), row.names = FALSE, na = "")
+    }
+    
+    return(complete_set_format)
     
   })
+  
+  
+  population_age_group_choice <- reactive({
+    
+    if (input$population_inc == "<5 years 2019 ACS"){
+      
+    } else if (input$population_inc == "<18 years 2019 ACS"){
+      
+    } else if (input$population_inc == "18+ years 2019 ACS"){
+      
+    } else if (input$population_inc == "All 2019 ACS"){
+      # total
+    } else {
+      # no pop
+      x <- 0
+    }
+    
+
+    
+  })
+  
   
   output$state_map_out <- renderLeaflet({
     
