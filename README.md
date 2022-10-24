@@ -13,6 +13,25 @@ vaccination data must be called: ```vaxx_data_in.csv```
 | columns | description |
 | --- | --- |
 | GEOID | Numerical code for the census tract under consideration (ex. 26001000100) |
-| COUNTVAXXED | Count of individuals with vaccination characteristics under consideration | 
+| COUNTVAXXED | Count of individuals with vaccination characteristics under consideration |
 
 4. Run the app
+
+---
+
+### Included Data Sets
+
+* ```state_number_crosstab.tsv``` - tab separated data file of state abbreviations and the numerical codes used to represent each U.S. state in census data pulls
+
+| columns | description |
+| --- | --- |
+| state | two-letter U.S. state abbreviations (ex. AL, MI) |
+| code | two number IDs (ex. 01, 26) |
+
+Source: [Attachment 100: Census Bureau State and County Codes](<https://www.nlsinfo.org/content/cohorts/nlsy97/other-documentation/geocode-codebook-supplement/attachment-100-census-bureau>)
+
+* 2019 ACS Populations
+
+* matching_vars.csv
+
+* Census Tract and County Line Shapefiles
