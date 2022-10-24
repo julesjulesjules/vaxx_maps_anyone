@@ -201,28 +201,48 @@ server <- function(input, output) {
   
   population_age_group_choice <- reactive({
     
+    full_pop <- population_choice()
+    
     if (input$population_inc == "<5 years 2019 ACS"){
+      
+      age_pop <- filter(full_pop, trimws(Description) == "Under 5 years")
+      age_pop <- age_pop %>% group_by(GEO_ID, county, tract) %>% summarize(total_pop = sum(sum_row, na.rm = TRUE))
       
     } else if (input$population_inc == "<18 years 2019 ACS"){
       
+      age_pop <- filter(full_pop, trimws(Description) %in% c("Under 5 years", "5 to 9 years", "10 to 14 years", "15 to 17 years"))
+      age_pop <- age_pop %>% group_by(GEO_ID, county, tract) %>% summarize(total_pop = sum(sum_row, na.rm = TRUE))
+      
     } else if (input$population_inc == "18+ years 2019 ACS"){
+      
+      age_pop <- filter(full_pop, trimws(Description) %in% c("18 and 19 years", "20 to 24 years", "25 to 29 years", "30 to 34 years", 
+                                                             "35 to 44 years", "45 to 54 years", "55 to 64 years", "65 to 74 years", 
+                                                             "75 to 84 years", "85 years and over"))
+      age_pop <- age_pop %>% group_by(GEO_ID, county, tract) %>% summarize(total_pop = sum(sum_row, na.rm = TRUE))
       
     } else if (input$population_inc == "All 2019 ACS"){
       # total
+      age_pop <- full_pop %>% group_by(GEO_ID, county, tract) %>% summarize(total_pop = sum(sum_row, na.rm = TRUE))
+      
     } else {
       # no pop
       x <- 0
     }
     
-
+   return(age_pop)
     
   })
   
   
   output$state_map_out <- renderLeaflet({
     
+    print(head(population_choice(), 25))
+    
     ct_shp <- census_tract_shp()
     ct_shp_map <- merge(vaxx_d, ct_shp, by = "GEOID", all.x = TRUE, all.y = TRUE)
+    
+    ## add population here, if indicated
+    
     ct_shp_map$shape <- st_transform(ct_shp_map$geometry,"+proj=longlat +datum=WGS84") # sf package-geometries into something usable by leaflet
     
     co_shp <- county_shp()
