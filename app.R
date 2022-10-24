@@ -242,6 +242,11 @@ server <- function(input, output) {
     ct_shp_map <- merge(vaxx_d, ct_shp, by = "GEOID", all.x = TRUE, all.y = TRUE)
     
     ## add population here, if indicated
+    if (input$population_inc != "None"){
+      pop_in <- population_age_group_choice()
+      ct_shp_map <- merge(ct_shp_map, pop_in, by.x = c("GEOID"), by.y = c("GEO_ID"), all.x = TRUE, all.y = FALSE)
+      ct_shp_map <- ct_shp_map %>% mutate(percent = round((COUNTVAXXED / total_pop)*100, 2))
+    }
     
     ct_shp_map$shape <- st_transform(ct_shp_map$geometry,"+proj=longlat +datum=WGS84") # sf package-geometries into something usable by leaflet
     
@@ -249,21 +254,47 @@ server <- function(input, output) {
     co_shp$shape <- st_transform(co_shp$geometry,"+proj=longlat +datum=WGS84") # sf package-geometries into something usable by leaflet
     
     
-    popup <- paste0(ct_shp_map$TRACT, "<br>", "Count Vaccinated = ", ct_shp_map$COUNTVAXXED) # what the tooltip will show
     
-    pall<-colorBin(c("#FFFFFF","#586F6B"), ct_shp_map$COUNTVAXXED, 10, pretty = T) 
     
-    map.leaf <- leaflet() %>% addPolygons(data = ct_shp_map$shape, fillColor = pall(ct_shp_map$COUNTVAXXED),
-                                                color = "#D7D9CE", # you need to use hex colors
-                                                fillOpacity = 1, 
-                                                weight = 1, 
-                                                smoothFactor = 0.2, 
-                                                popup = popup) %>%
-                              setMapWidgetStyle(list(background= "#292929")) %>%
-                              addLegend(pal = pall, opacity = 1,
-                                values = ct_shp_map$COUNTVAXXED, 
-                                position = "bottomright", 
-                                title = "Count")
+    if (input$population_inc != "None"){
+      
+      popup <- paste0(ct_shp_map$TRACT, "<br>", "Count Vaccinated = ", ct_shp_map$COUNTVAXXED, 
+                      "<br>Population = ", ct_shp_map$total_pop, 
+                      "<br>Percent = ", ct_shp_map$percent, "%") # what the tooltip will show
+      
+      pall<-colorBin(c("#FFFFFF","#586F6B"), ct_shp_map$percent, 10, pretty = T) 
+      
+      map.leaf <- leaflet() %>% addPolygons(data = ct_shp_map$shape, fillColor = pall(ct_shp_map$percent),
+                                            color = "#D7D9CE", # you need to use hex colors
+                                            fillOpacity = 1, 
+                                            weight = 1, 
+                                            smoothFactor = 0.2, 
+                                            popup = popup) %>%
+        setMapWidgetStyle(list(background= "#292929")) %>%
+        addLegend(pal = pall, opacity = 1,
+                  values = ct_shp_map$percent, 
+                  position = "bottomright", 
+                  title = "Percent")
+      
+    } else {
+      
+        popup <- paste0(ct_shp_map$TRACT, "<br>", "Count Vaccinated = ", ct_shp_map$COUNTVAXXED) # what the tooltip will show
+      
+        pall<-colorBin(c("#FFFFFF","#586F6B"), ct_shp_map$COUNTVAXXED, 10, pretty = T) 
+      
+        map.leaf <- leaflet() %>% addPolygons(data = ct_shp_map$shape, fillColor = pall(ct_shp_map$COUNTVAXXED),
+                                                    color = "#D7D9CE", # you need to use hex colors
+                                                    fillOpacity = 1, 
+                                                    weight = 1, 
+                                                    smoothFactor = 0.2, 
+                                                    popup = popup) %>%
+                                  setMapWidgetStyle(list(background= "#292929")) %>%
+                                  addLegend(pal = pall, opacity = 1,
+                                    values = ct_shp_map$COUNTVAXXED, 
+                                    position = "bottomright", 
+                                    title = "Count")
+    }
+    
     
     if(input$county_overlay == "Yes"){
       map.leaf <- map.leaf %>% addPolygons(data = co_shp$shape, fillColor = "#B287A3",
