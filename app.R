@@ -8,12 +8,16 @@ library(htmlwidgets)
 library(tigris)
 library(htmltools) 
 library(leaflet.extras)
+library(censusapi)
+library(reshape2)
 
 census_api_key_read <- read.table("census_api_key_hold.txt")[1, 1]
 
 census_api_key(census_api_key_read) # load API key
 
 vaxx_d <- read.csv("./data/vaxx_data_in.csv")
+
+state_num <- read.table("./data/state_number_crosstab.tsv", sep = "\t", header = FALSE, colClasses = c("character", "character"), row.names = NULL, col.names = c("state", "code"))
 
 ui <- fluidPage(
   
@@ -26,7 +30,12 @@ ui <- fluidPage(
       radioButtons("county_overlay", h6(strong("County Outlines?")), 
                   choices = c("Yes", "No"), selected = "No"), 
       selectInput("state_choice", h6(strong("State View:")), 
-                  choices = c(state.abb), selected = "MI")
+                  choices = c(state.abb), selected = "MI"), 
+      radioButtons("shp_year_choice", h6(strong("Boundary Year:")), 
+                   choices = c("2010", "2020"), selected = "2010"), 
+      selectInput("population_inc", h6(strong("Population Inclusion?")), 
+                  choices = c("None", ">5 years 2019 ACS", ">18 years 2019 ACS", 
+                              "18+ years 2019 ACS", "All 2019 ACS"), selected = "None")
     
     ),
     
@@ -42,17 +51,38 @@ server <- function(input, output) {
   
   census_tract_shp <- reactive({
     
-    tracts_out <- tracts(as.character(input$state_choice),county=NULL,2010,cb=T) ## grab tract shapefiles
-    tracts_out$GEOID <- as.numeric(gsub("1400000US","",tracts_out$GEO_ID)) # beautifying tract data
+    tracts_out <- tracts(as.character(input$state_choice),county=NULL,as.numeric(input$shp_year_choice),cb=T) ## grab tract shapefiles
+    if (input$shp_year_choice == "2010"){
+      tracts_out$GEOID <- as.numeric(gsub("1400000US","",tracts_out$GEO_ID)) # beautifying tract data
+    } else if (input$shp_year_choice == "2020"){
+      tracts_out$GEOID <- tracts_out$GEOID
+    }
     
     return(tracts_out)
   })
   
   county_shp <- reactive({
-    county_out <- counties(as.character(input$state_choice[1]),2010,cb=T, resolution = "500k") ## grab county shapefiles
-    county_out$GEOID <- as.numeric(gsub("0500000US","",county_out$GEO_ID)) # beautifying tract data
-    
+    county_out <- counties(as.character(input$state_choice[1]),as.numeric(input$shp_year_choice),cb=T, resolution = "500k") ## grab county shapefiles
+    if (input$shp_year_choice == "2010"){
+      county_out$GEOID <- as.numeric(gsub("0500000US","",county_out$GEO_ID)) # beautifying tract data
+    } else if (input$shp_year_choice == "2020"){
+      county_out$GEOID <- county_out$GEOID
+    }
     return(county_out)
+  })
+  
+  population_choice <- reactive({
+    
+    state_code <- filter(state_num, state == as.character(input$state_choice[1]))[1, 2]
+    
+    acs_total <- getCensus(
+      name = "acs/acs5", 
+      vintage = 2019, 
+      vars = c("NAME", "group(B01003)"), 
+      region = "tract:*", 
+      regionin = paste0("state:", state_code), 
+      key = census_api_key_read)
+    
   })
   
   output$state_map_out <- renderLeaflet({
