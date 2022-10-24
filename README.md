@@ -30,8 +30,23 @@ vaccination data must be called: ```vaxx_data_in.csv```
 
 Source: [Attachment 100: Census Bureau State and County Codes](<https://www.nlsinfo.org/content/cohorts/nlsy97/other-documentation/geocode-codebook-supplement/attachment-100-census-bureau>)
 
-* 2019 ACS Populations
+* 2019 ACS Populations - data is pulled using ```censusapi```, stored versions are saved in ```./data/2019_acs_populations``` for quicker processing
 
-* matching_vars.csv
+[CensusAPI Information](<https://cran.r-project.org/web/packages/censusapi/censusapi.pdf>)
 
-* Census Tract and County Line Shapefiles
+* ```matching_vars.csv``` - comma separated data file of census variable codes and their definitions
+
+| columns | description |
+| --- | --- |
+| Group | Census variable code (ex. B01001A) |
+| Number | integer number running down list |
+| MatchCode | Combination of Group and Number used to match the census variable identifier to its written definition |
+| Description | Age, sex, etc. descriptor for each MatchCode |
+| Sex | Relevant sex information for each MatchCode |
+| Race | Relevant race information for each MatchCode |
+
+Source: [Census API: groups in /data/2019/acs/acs5/groups](<https://api.census.gov/data/2019/acs/acs5/groups.html>)
+
+* Census Tract and County Line Shapefiles - this data is not stored, but is regularly pulled via ```tidycensus```; both 2010 and 2020 options are available
+
+[Tidycensus Information](<https://walker-data.com/tidycensus/>)
