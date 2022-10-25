@@ -37,7 +37,9 @@ ui <- fluidPage(
                    choices = c("2010", "2020"), selected = "2010"), 
       selectInput("population_inc", h6(strong("Population Inclusion?")), 
                   choices = c("None", "<5 years 2019 ACS", "<18 years 2019 ACS", 
-                              "18+ years 2019 ACS", "All 2019 ACS"), selected = "None")
+                              "18+ years 2019 ACS", "All 2019 ACS"), selected = "None"), 
+      textInput("title_create", h6(strong("Add a title:"))),
+      downloadButton("downloadData", h6(strong("Download Map")))
     
     ),
     
