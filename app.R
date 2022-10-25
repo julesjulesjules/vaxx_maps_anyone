@@ -29,8 +29,6 @@ ui <- fluidPage(
   # Sidebar  
   sidebarLayout(
     sidebarPanel(
-      radioButtons("county_overlay", h6(strong("County Outlines?")), 
-                  choices = c("Yes", "No"), selected = "No"), 
       selectInput("state_choice", h6(strong("State View:")), 
                   choices = c(state.abb), selected = "MI"), 
       radioButtons("shp_year_choice", h6(strong("Boundary Year:")), 
@@ -38,6 +36,8 @@ ui <- fluidPage(
       selectInput("population_inc", h6(strong("Population Inclusion?")), 
                   choices = c("None", "<5 years 2019 ACS", "<18 years 2019 ACS", 
                               "18+ years 2019 ACS", "All 2019 ACS"), selected = "None"), 
+      radioButtons("county_overlay", h6(strong("County Outlines?")), 
+                   choices = c("Yes", "No"), selected = "No"), 
       textInput("title_create", h6(strong("Add a title:"))),
       downloadButton("downloadData", h6(strong("Download Map")))
     
@@ -303,6 +303,27 @@ server <- function(input, output) {
                                weight = 2, 
                                smoothFactor = 0.2)
     }
+    
+    if(input$title_create != ""){
+      
+      tag.map.title <- tags$style(HTML("
+          .leaflet-control.map-title { 
+          transform: translate(-50%,20%);
+          position: fixed !important;
+          left: 50%;
+          text-align: center;
+          padding-left: 10px; 
+          padding-right: 10px; 
+          background: rgba(255,255,255,0.75);
+          font-weight: bold;
+          font-size: 20px;
+        }
+        "))
+      title <- tags$div(tag.map.title,HTML(input$title_create)) # title relating to the HTML code in the preamble
+      
+      map.leaf <- map.leaf %>% addControl(title, className="map-title")
+    
+      }
     
     return(map.leaf)
     
