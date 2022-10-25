@@ -38,7 +38,7 @@ ui <- fluidPage(
                               "18+ years 2019 ACS", "All 2019 ACS"), selected = "None"), 
       radioButtons("county_overlay", h6(strong("County Outlines?")), 
                    choices = c("Yes", "No"), selected = "No"), 
-      textInput("title_create", h6(strong("Add a title:"))),
+      textInput("title_create", h6(strong("Add a Title:"))),
       downloadButton("downloadData", h6(strong("Download Map")))
     
     ),
@@ -325,9 +325,22 @@ server <- function(input, output) {
     
       }
     
+    saveWidget(map.leaf,"map_out.html",selfcontained=T)
     return(map.leaf)
     
   })
+  
+  
+  output$downloadData <- downloadHandler(
+    filename = function() {
+      "map_out.html"
+    },
+    content = function(file) {
+      file.copy("map_out.html", file, overwrite=TRUE)
+    }
+  )
+  
+  
   
 }
 
