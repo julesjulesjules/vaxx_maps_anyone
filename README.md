@@ -50,3 +50,9 @@ Source: [Census API: groups in /data/2019/acs/acs5/groups](<https://api.census.g
 * Census Tract and County Line Shapefiles - this data is not stored, but is regularly pulled via ```tidycensus```; both 2010 and 2020 options are available
 
 [Tidycensus Information](<https://walker-data.com/tidycensus/>)
+
+---
+
+### Notes:
+
+* The created map can be downloaded as an interactive .html document using the "Download Map" button. The map will be saved as ```map_out.html``` in your Downloads folder.
